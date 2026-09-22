@@ -9,8 +9,8 @@ Replaces "learning lessons" with **speaking practice**: every dialogue is built 
 For each of the 5 conversations:
 
 1. **Read silently once** — understand the situation.
-2. **Read out loud as both roles** — first the interviewer, then you. Fix your pronunciation as you go.
-3. **Read it again as only YOU** — cover the "You:" answers and speak them from memory.
+2. **Play the interviewer MP3** (`audio/interviewer-XX.mp3`) — the interviewer speaks with pauses. Answer out loud with your "You:" lines from the conversation file.
+3. **Read out loud as both roles** — first the interviewer, then you. Fix your pronunciation as you go.
 4. **Record yourself** (phone voice memo) — listen back, pick ONE thing to fix.
 5. **Mark it done** in the day's checklist.
 
@@ -25,6 +25,12 @@ day-01-job-interview/
   conversation-03-current-project.md
   conversation-04-your-questions.md
   conversation-05-career-plans.md
+  audio/
+    interviewer-01-greeting.mp3       → interviewer's lines only (you answer)
+    interviewer-02-about-yourself.mp3
+    interviewer-03-current-project.mp3
+    interviewer-04-your-questions.mp3
+    interviewer-05-career-plans.mp3
 day-02-.../
 day-03-.../
 ```
