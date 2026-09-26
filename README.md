@@ -31,7 +31,18 @@ day-01-job-interview/
     interviewer-03-current-project.mp3
     interviewer-04-your-questions.mp3
     interviewer-05-career-plans.mp3
-day-02-.../
+day-02-phone-screen/
+  conversation-01-answering-the-call.md
+  conversation-02-about-the-position.md
+  conversation-03-your-experience.md
+  conversation-04-salary-and-working-style.md
+  conversation-05-next-steps.md
+  audio/
+    recruiter-01-answering-the-call.mp3  → recruiter's lines only (you answer)
+    recruiter-02-about-the-position.mp3
+    recruiter-03-your-experience.mp3
+    recruiter-04-salary.mp3
+    recruiter-05-next-steps.mp3
 day-03-.../
 ```
 
@@ -46,7 +57,7 @@ New words appear **only** in the 💡 boxes, never inside the dialogue you must 
 ## Roadmap
 
 - [x] Day 1 — The Job Interview
-- [ ] Day 2 — Phone Screen with a Recruiter
+- [x] Day 2 — Phone Screen with a Recruiter
 - [ ] Day 3 — Introducing Yourself to a New Team
 - [ ] Day 4 — Daily Stand-up
 - [ ] Day 5 — Code Review
