@@ -43,7 +43,18 @@ day-02-phone-screen/
     recruiter-03-your-experience.mp3
     recruiter-04-salary.mp3
     recruiter-05-next-steps.mp3
-day-03-.../
+day-03-new-team/
+  conversation-01-first-day.md
+  conversation-02-introducing-yourself.md
+  conversation-03-getting-up-to-speed.md
+  conversation-04-asking-for-help.md
+  conversation-05-small-talk-and-closing.md
+  audio/
+    team-01-first-day.mp3   → teammate/lead's lines only (you answer)
+    team-02-introducing-yourself.mp3
+    team-03-getting-up-to-speed.mp3
+    team-04-asking-for-help.mp3
+    team-05-small-talk-and-closing.mp3
 ```
 
 ## Vocabulary note
@@ -58,7 +69,7 @@ New words appear **only** in the 💡 boxes, never inside the dialogue you must 
 
 - [x] Day 1 — The Job Interview
 - [x] Day 2 — Phone Screen with a Recruiter
-- [ ] Day 3 — Introducing Yourself to a New Team
+- [x] Day 3 — Introducing Yourself to a New Team
 - [ ] Day 4 — Daily Stand-up
 - [ ] Day 5 — Code Review
 - [ ] Day 6 — Explaining a Bug to a Manager
