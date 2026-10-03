@@ -165,6 +165,30 @@ check("no temp files left behind", not list((day / "audio").glob("_tts_*")))
 check("output matches the format of the hand-made day 1-4 mp3s",
       ma.spec_of(out) == ("mp3", 24000, 1, 48), str(ma.spec_of(out)))
 
+# main() used to unpack two values here and then print a `kind` that no longer
+# existed, so every run died with NameError — after the audio was already written.
+check("target_for also returns the kind main() prints",
+      [t[2] for t in (ma.target_for(tmp / "conversation-01-probe.md", "manager"),
+                      ma.target_for(tmp / "story-01-probe.md", "manager"))]
+      == ["conv", "story"])
+
+day_full = tmp / "day-full"
+(day_full / "audio").mkdir(parents=True)
+for lesson in ("conversation-01-probe.md", "story-01-probe.md"):
+    (day_full / lesson).write_text((tmp / lesson).read_text(encoding="utf-8"),
+                                   encoding="utf-8")
+argv, main_err = sys.argv, ""
+sys.argv = ["make_audio.py", str(day_full), "--prefix", "manager"]
+try:
+    asyncio.run(ma.main())  # the real entry point, not just build()
+    main_ok = True
+except Exception as exc:  # NameError, KeyError, anything main() trips on
+    main_ok, main_err = False, f"{type(exc).__name__}: {exc}"
+finally:
+    sys.argv = argv
+check("main() runs end to end over a conversation and a story", main_ok, main_err)
+check("main() wrote both mp3s", len(list((day_full / "audio").glob("*.mp3"))) == 2)
+
 print("\nbuilding a story")
 day_story = tmp / "day-story"
 (day_story / "audio").mkdir(parents=True)

@@ -119,16 +119,16 @@ def split_for_tts(text: str, limit: int = 230):
 
 
 def target_for(md: pathlib.Path, prefix: str):
-    """(mp3 filename, chunks) for a lesson file, or None to skip it.
+    """(mp3 filename, chunks, kind) for a lesson file, or None to skip it.
 
     Conversations are named for the speaker who talks in them; a story is a
     narration with no second speaker, so it keeps its story- name.
     """
     if md.name.startswith("conversation-"):
         name = f"{prefix}-{md.stem[len('conversation-'):]}.mp3"
-        return name, parse_conversation(md)
+        return name, parse_conversation(md), "conv"
     if md.name.startswith("story-"):
-        return f"{md.stem}.mp3", parse_story(md)
+        return f"{md.stem}.mp3", parse_story(md), "story"
     return None
 
 
@@ -243,7 +243,7 @@ async def main():
         target = target_for(md, args.prefix)
         if target is None:
             continue
-        name, chunks = target
+        name, chunks, kind = target
         if not chunks:
             print(f"  !! {md.name}: nothing to read")
             continue

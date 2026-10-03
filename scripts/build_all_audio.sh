@@ -1,9 +1,10 @@
 #!/usr/bin/env bash
 # Generate all remaining day audio, one day at a time.
-set -u
+set -uo pipefail
 cd "$(dirname "$0")/.." || exit 2
 
 PY="${HERMES_PY:-/c/Users/thach/AppData/Local/hermes/hermes-agent/venv/Scripts/python.exe}"
+failed=()
 
 run_day () {
   local day="$1" prefix="$2"
@@ -11,6 +12,7 @@ run_day () {
   echo "=== $day  (prefix: $prefix) ==="
   "$PY" scripts/make_audio.py "$day" --prefix "$prefix" || {
     echo "!!! FAILED: $day"
+    failed+=("$day")
     return 1
   }
 }
@@ -21,4 +23,8 @@ run_day day-09-small-talk-at-lunch   colleague
 run_day day-10-technical-interview   interviewer
 
 echo ""
+if [ ${#failed[@]} -gt 0 ]; then
+  echo "=== FINISHED WITH ERRORS: ${failed[*]} ==="
+  exit 1
+fi
 echo "=== all done ==="
