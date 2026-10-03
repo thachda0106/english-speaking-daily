@@ -22,23 +22,10 @@ REPO = HERE.parent
 spec = importlib.util.spec_from_file_location("make_audio", HERE / "make_audio.py")
 ma = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(ma)
-
-# Who speaks in each day's audio. Duplicated here on purpose: the repo check below
-# is only meaningful if the expected filename comes from outside the audio folder.
-# Second item maps a lesson number to the slug its hand-made audio actually used;
-# days 1-4 predate scripts/make_audio.py and shortened a couple of slugs.
-SPEAKER = {
-    "day-01-job-interview": ("interviewer", {}),
-    "day-02-phone-screen": ("recruiter", {"04": "salary"}),
-    "day-03-new-team": ("team", {}),
-    "day-04-daily-standup": ("standup", {"01": "the-format"}),
-    "day-05-code-review": ("colleague", {}),
-    "day-06-explaining-a-bug": ("manager", {}),
-    "day-07-salary-discussion": ("recruiter", {}),
-    "day-08-negotiating-a-deadline": ("manager", {}),
-    "day-09-small-talk-at-lunch": ("colleague", {}),
-    "day-10-technical-interview": ("interviewer", {}),
-}
+days_spec = importlib.util.spec_from_file_location("days", HERE / "days.py")
+days = importlib.util.module_from_spec(days_spec)
+days_spec.loader.exec_module(days)
+SPEAKER = days.DAYS
 
 CONV = """# Day X · Conversation 1 — Probe
 
@@ -264,18 +251,35 @@ if not in_repo:
 check("no temp files sitting in the repo", not list(REPO.glob("day-*/audio/_tts_*")))
 
 
-def expected_mp3(day, lesson):
-    speaker, renamed = SPEAKER[day.name]
-    num, slug = lesson.stem[len("conversation-"):].split("-", 1)
-    return (f"{lesson.stem}.mp3" if lesson.name.startswith("story-")
-            else f"{speaker}-{num}-{renamed.get(num, slug)}.mp3")
+# A day is "voiced" once it has an audio/ folder. Days written but not yet voiced
+# are a legitimate state -- the lessons exist and the mp3s come later -- so they
+# are reported on every run rather than failing: a deleted audio/ folder would
+# otherwise make these checks skip silently.
+voiced = [d for d in sorted(REPO.glob("day-*"))
+          if d.name in SPEAKER and (d / "audio").is_dir()]
+pending = [d.name for d in sorted(REPO.glob("day-*"))
+           if d.name in SPEAKER and not (d / "audio").is_dir()]
 
-
-lessons = [(d, p) for d in sorted(REPO.glob("day-*")) if d.name in SPEAKER
-           for p in sorted(d.glob("*.md")) if ma.target_for(p, SPEAKER[d.name][0])]
+lessons = [(d, p) for d in voiced for p in sorted(d.glob("*.md"))
+           if ma.target_for(p, SPEAKER[d.name])]
 orphan = [f"{d.name}/{p.name}" for d, p in lessons
-          if not (d / "audio" / expected_mp3(d, p)).exists()]
-check(f"every lesson has its mp3 ({len(lessons)} lessons)", not orphan, str(orphan[:5]))
+          if not (d / "audio" / days.mp3_for(d.name, p.stem)).exists()]
+check(f"every lesson has its mp3 ({len(lessons)} lessons, {len(voiced)} voiced days)",
+      not orphan, str(orphan[:5]))
+
+# A day folder nobody registered is the silent failure: its audio would be named
+# after a prefix nobody expects, and no other check would notice.
+unregistered = [d.name for d in sorted(REPO.glob("day-*")) if d.name not in SPEAKER]
+check("every day folder is registered in scripts/days.py", not unregistered,
+      str(unregistered))
+
+missing = [d for d in SPEAKER if not pathlib.Path(d).is_dir()]
+check("no registered day is missing its folder", not missing, str(missing))
+
+if pending:
+    print(f"\n  NOTE  {len(pending)} day(s) written but not voiced yet:")
+    print("        " + ", ".join(pending))
+    print("        Lessons are complete. Run scripts/build_all_audio.sh for their mp3s.")
 
 shutil.rmtree(tmp, ignore_errors=True)
 print(f"\n{'=' * 58}\n{len(failures)} failed")

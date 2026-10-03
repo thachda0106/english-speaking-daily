@@ -123,7 +123,9 @@ New words appear **only** in the 💡 boxes, never inside the dialogue you must 
 - [x] Day 9 — Small Talk at Lunch
 - [x] Day 10 — The Technical Interview
 
-## The arc of the 10 days
+## Part 1 · Days 1-10 — Workplace English
+
+Built for the job search. Every day is a situation you will actually be in at work.
 
 | Day | Skill it trains | Why it matters for your job search |
 | --- | --- | --- |
@@ -140,3 +142,41 @@ New words appear **only** in the 💡 boxes, never inside the dialogue you must 
 
 Day 10, Conversation 5 has **your interview toolkit** — 8 sentences that cover the whole course.
 Read it before every interview.
+
+## Part 2 · Days 11-30 — Everyday Conversational English
+
+Days 1-10 taught you to *work* in English. Days 11-30 teach you to *live* in it —
+the coffee shop, the bus, the phone call, the rent, the weekend. Nobody is testing
+you, so there is nothing to be afraid of and no vocabulary to memorise.
+
+The design is the same: **the dialogue only uses words you already know.** New words
+appear only in the 💡 boxes. So each day is not studying — it is activating what is
+already in you, out loud, until it stops feeling like English.
+
+| Day | Topic | The sentence it builds |
+| --- | --- | --- |
+| 11 | Coffee shop | Ordering, and changing your mind |
+| 12 | Grocery shopping | Asking for things, comparing two options |
+| 13 | Taking a bus | Directions, times, "is this the right stop?" |
+| 14 | Phone and messages | "Sorry, I can't hear you" |
+| 15 | Weekend plans | Inviting, saying yes, saying no kindly |
+| 16 | Weather and seasons | The weather is the safest small talk there is |
+| 17 | Cooking at home | Steps, taste, admitting it failed |
+| 18 | Money and prices | Asking the price, splitting the bill |
+| 19 | Health and body | Saying what is wrong, seeing a doctor |
+| 20 | Housing and rent | Looking at a place, describing problems |
+| 21 | Travel and places | Stations, tickets, going somewhere new |
+| 22 | Likes and dislikes | Giving an opinion without sounding rude |
+| 23 | Agreeing and disagreeing | Saying no kindly, partly agreeing |
+| 24 | Asking for help | Asking a stranger, politely but firmly |
+| 25 | Losing your way | Admitting you are lost and getting out of it |
+| 26 | Warnings and caution | Giving advice, saying no to someone |
+| 27 | Workplace small talk | The bridge back to Days 1-10 |
+| 28 | Hobbies and interests | What you do for fun |
+| 29 | Storytelling | "One time..." — telling about your life |
+| 30 | Sounding natural | Fillers, rhythm, the final exam |
+
+**Day 30 is the one that changes everything.** By then you have 30 days of material
+behind you, and the lesson is what native speakers actually do: pause, re-start,
+say *"I mean..."*, laugh at yourself, and keep going. Fluency is not perfect
+grammar. It is not stopping.
