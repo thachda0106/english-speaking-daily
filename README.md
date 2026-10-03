@@ -9,12 +9,24 @@ Replaces "learning lessons" with **speaking practice**: every dialogue is built 
 For each of the 5 conversations:
 
 1. **Read silently once** — understand the situation.
-2. **Play the interviewer MP3** (`audio/interviewer-XX.mp3`) — the interviewer speaks with pauses. Answer out loud with your "You:" lines from the conversation file.
+2. **Play the speaker MP3** (`audio/<speaker>-XX.mp3`) — the other person speaks with pauses. Answer out loud with your "You:" lines from the conversation file.
 3. **Read out loud as both roles** — first the interviewer, then you. Fix your pronunciation as you go.
 4. **Record yourself** (phone voice memo) — listen back, pick ONE thing to fix.
 5. **Mark it done** in the day's checklist.
 
 > Never practice silently in your head. **The voice is the skill.**
+
+## The long story (from Day 5 on) — do this FIRST
+
+Every day also has **one long story** (`story-01-the-long-story.md` + `.mp3`): the whole day
+told as a single narrative in the past tense.
+
+1. **Read it silently once.**
+2. **Read it out loud twice.** Stop at every full stop. Feel the past-tense endings.
+3. **Shadow the audio** — listen, then repeat each sentence over the top of it.
+4. **Retell it in 60 seconds** without looking. This is the real test.
+
+Connected speech is the goal: not single words, but *one long breath of real English*.
 
 ## Structure
 
@@ -67,7 +79,28 @@ day-04-daily-standup/
     standup-03-being-blocked.mp3
     standup-04-listening-and-pairing.mp3
     standup-05-ending-the-stand-up.mp3
+day-05-code-review/           prefix: colleague
+day-06-explaining-a-bug/      prefix: manager
+day-07-salary-discussion/     prefix: recruiter
+day-08-negotiating-a-deadline/ prefix: manager
+day-09-small-talk-at-lunch/   prefix: colleague
+day-10-technical-interview/   prefix: interviewer
+  # every day above also has:
+  story-01-the-long-story.md + audio/story-01-the-long-story.mp3
 ```
+
+## Regenerating the audio
+
+All MP3s are generated from the markdown with one script (48 kb/s, 24 kHz, mono):
+
+```bash
+python scripts/make_audio.py day-06-explaining-a-bug --prefix manager
+python scripts/make_audio.py day-10-technical-interview --prefix interviewer
+```
+
+It reads only the **other speaker's** lines from each conversation, adds a 2.6 s pause after
+each one so you can answer out loud, and reads the story sentence by sentence. Re-run it any
+time you edit a dialogue — never hand-edit an mp3.
 
 ## Vocabulary note
 
@@ -83,9 +116,27 @@ New words appear **only** in the 💡 boxes, never inside the dialogue you must 
 - [x] Day 2 — Phone Screen with a Recruiter
 - [x] Day 3 — Introducing Yourself to a New Team
 - [x] Day 4 — Daily Stand-up
-- [ ] Day 5 — Code Review
-- [ ] Day 6 — Explaining a Bug to a Manager
-- [ ] Day 7 — Salary Discussion
-- [ ] Day 8 — Negotiating a Deadline
-- [ ] Day 9 — Small Talk at Lunch
-- [ ] Day 10 — The Technical Interview
+- [x] Day 5 — Code Review
+- [x] Day 6 — Explaining a Bug to a Manager
+- [x] Day 7 — Salary Discussion
+- [x] Day 8 — Negotiating a Deadline
+- [x] Day 9 — Small Talk at Lunch
+- [x] Day 10 — The Technical Interview
+
+## The arc of the 10 days
+
+| Day | Skill it trains | Why it matters for your job search |
+| --- | --- | --- |
+| 1 | Interview warm-up | The first impression |
+| 2 | Phone screen | The call that decides if there is an interview |
+| 3 | Joining a new team | What the first 3 months really sound like |
+| 4 | Stand-up | Daily proof you can work in English |
+| 5 | Code review | Proving you can defend a decision |
+| 6 | Explaining a bug | **The question that fails most candidates** |
+| 7 | Salary | Asking for more without sounding greedy |
+| 8 | Negotiating a deadline | Senior engineers push back; juniors just agree |
+| 9 | Small talk | Where you actually build trust at a new company |
+| 10 | Technical interview | The whole toolkit, used together |
+
+Day 10, Conversation 5 has **your interview toolkit** — 8 sentences that cover the whole course.
+Read it before every interview.

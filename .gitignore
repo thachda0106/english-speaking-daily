@@ -1,0 +1,10 @@
+# Hermes scratch dirs (terminal temp)
+.hermes-tmp.*
+
+# TTS temp parts from scripts/make_audio.py
+_tts_*.mp3
+_tts_list_*.txt
+
+# Python
+__pycache__/
+*.pyc
