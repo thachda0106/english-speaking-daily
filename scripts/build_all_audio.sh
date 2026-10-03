@@ -11,8 +11,12 @@ cd "$(dirname "$0")/.." || exit 2
 
 PY="${HERMES_PY:-/c/Users/thach/AppData/Local/hermes/hermes-agent/venv/Scripts/python.exe}"
 failed=()
+planned=0
 
 # Emit "<day-folder> <speaker>" per line, from the single source of truth.
+# A day qualifies when its lessons exist -- not when an audio/ folder already
+# does. Gating on audio/ meant a day's very first build was silently skipped,
+# and 'bash build_all_audio.sh 27' printed 'all done' having done nothing.
 plan () {
   "$PY" - <<'EOF'
 import pathlib, re, sys
@@ -22,7 +26,7 @@ spec = importlib.util.spec_from_file_location("days", "scripts/days.py")
 mod = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(mod)
 for day, speaker in sorted(mod.DAYS.items()):
-    if not pathlib.Path(day, "audio").is_dir():
+    if not any(pathlib.Path(day).glob("*.md")):
         continue
     print(day, speaker)
 EOF
@@ -40,6 +44,10 @@ run_day () {
 }
 
 while read -r day prefix; do
+  # Python's print() emits CRLF on Windows and bash's read keeps the \r
+  # on the last field, so the speaker arrived as "friend\r" and every
+  # filename built from it was rejected as invalid.
+  prefix="${prefix%$'\r'}"
   [ -z "$day" ] && continue
   if [ $# -gt 0 ]; then
     num="${day#day-}"
@@ -50,8 +58,15 @@ while read -r day prefix; do
     done
     [ "$want" = 1 ] || continue
   fi
+  planned=$((planned + 1))
   run_day "$day" "$prefix"
 done < <(plan)
+
+# An empty plan means the day list could not be read, which is not success.
+if [ "$planned" = 0 ] && [ $# -eq 0 ]; then
+  echo "!!! no days found -- check scripts/days.py" >&2
+  exit 1
+fi
 
 echo ""
 if [ ${#failed[@]} -gt 0 ]; then

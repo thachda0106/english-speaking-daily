@@ -51,11 +51,13 @@ class Sandbox:
         (self.dir / "scripts").mkdir()
         for f in ("build_all_audio.sh", "days.py"):
             shutil.copy(REPO / "scripts" / f, self.dir / "scripts")
-        # build_all_audio.sh enumerates days from days.py, skipping any without an
-        # audio/ folder. Without these the wrapper has nothing to do and the run
-        # is a vacuous pass.
+        # build_all_audio.sh qualifies a day by its *lessons* existing. Without
+        # them plan() finds nothing and the run degenerates into a vacuous pass
+        # (or trips the empty-plan guard), never exercising the day loop.
         for day in REGISTRY:
-            (self.dir / day / "audio").mkdir(parents=True)
+            (self.dir / day).mkdir()
+            (self.dir / day / "conversation-01-probe.md").write_text(
+                "# probe\n", encoding="utf-8")
 
     def stub(self, exit_code: int, echo: str = ""):
         (self.dir / "scripts" / "make_audio.py").write_text(
@@ -63,9 +65,12 @@ class Sandbox:
         return self
 
     def run(self):
+        return self.run_with_args([])
+
+    def run_with_args(self, args):
         if BASH is None:
             return None, ""
-        r = subprocess.run([BASH, "scripts/build_all_audio.sh"], cwd=self.dir,
+        r = subprocess.run([BASH, "scripts/build_all_audio.sh", *args], cwd=self.dir,
                            capture_output=True, text=True)
         return r.returncode, r.stdout + r.stderr
 
@@ -110,6 +115,33 @@ check("no day is hardcoded outside the registry loop",
 check("the day list comes from days.py", "days.py" in shell)
 # Whether plan() skips days without audio/ is test_days.py's concern; here we
 # only assert the wrapper delegates its day list to the registry.
+
+print("\nthe day-number filter passes whole folder names")
+# The stub echoes its argv, so this asserts what the wrapper *hands over* --
+# which is the part the wrapper controls. Banners come from the real script, so
+# asserting on them here would pass regardless of the wrapper's behaviour.
+named = Sandbox().stub(0, "ok")
+(named.dir / "scripts" / "make_audio.py").write_text(
+    "import sys\nprint('ARGV=' + '|'.join(sys.argv[1:]))\n", encoding="utf-8")
+code, out = named.run_with_args(["28"])
+passed = [l for l in out.splitlines() if "ARGV=" in l]
+check("one day ran for the requested number", len(passed) == 1, out.strip()[-120:])
+check("it received the full folder name, not a stripped one",
+      passed and passed[0].startswith("ARGV=day-28-hobbies-and-interests|"),
+      str(passed[:1]))
+check("no other day ran", "day-27" not in out and "day-29" not in out)
+check("exit 0 when the selected day succeeds", code == 0, f"exit={code}")
+named.close()
+
+print("\nwhen the day list cannot be read")
+empty = Sandbox().stub(0, "ok")
+for d in REGISTRY:  # remove every lesson, so plan() finds nothing
+    (empty.dir / d / "conversation-01-probe.md").unlink()
+code, out = empty.run()
+check("an empty plan exits non-zero", code not in (0, None), f"exit={code}")
+check("an empty plan does NOT claim all done", "=== all done ===" not in out)
+check("and says why", "no days found" in out, out.strip()[-140:])
+empty.close()
 
 print("\nthe pre-fix wrapper, for comparison")
 sh = (REPO / "scripts" / "build_all_audio.sh").read_text(encoding="utf-8")
