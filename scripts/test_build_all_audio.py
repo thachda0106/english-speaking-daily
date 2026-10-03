@@ -9,6 +9,7 @@ that matters most here.
 
 Offline: scripts/make_audio.py is swapped for a stub, so nothing calls edge-tts.
 """
+import importlib.util
 import pathlib
 import re
 import shutil
@@ -16,10 +17,16 @@ import subprocess
 import sys
 import tempfile
 
-REPO = pathlib.Path(__file__).resolve().parent.parent
+HERE = pathlib.Path(__file__).resolve().parent
+REPO = HERE.parent
 BASH = next((p for p in (r"C:\Program Files\Git\bin\bash.exe",
                          "/usr/bin/bash", "bash") if shutil.which(p) or pathlib.Path(p).exists()),
             None)
+_spec = importlib.util.spec_from_file_location("days", HERE / "days.py")
+_days = importlib.util.module_from_spec(_spec)
+_spec.loader.exec_module(_days)
+REGISTRY = sorted(_days.DAYS)
+
 failures, passes = [], 0
 
 
@@ -42,7 +49,13 @@ class Sandbox:
     def __init__(self):
         self.dir = pathlib.Path(tempfile.mkdtemp(prefix="hermes-verify-"))
         (self.dir / "scripts").mkdir()
-        shutil.copy(REPO / "scripts" / "build_all_audio.sh", self.dir / "scripts")
+        for f in ("build_all_audio.sh", "days.py"):
+            shutil.copy(REPO / "scripts" / f, self.dir / "scripts")
+        # build_all_audio.sh enumerates days from days.py, skipping any without an
+        # audio/ folder. Without these the wrapper has nothing to do and the run
+        # is a vacuous pass.
+        for day in REGISTRY:
+            (self.dir / day / "audio").mkdir(parents=True)
 
     def stub(self, exit_code: int, echo: str = ""):
         (self.dir / "scripts" / "make_audio.py").write_text(
@@ -83,14 +96,20 @@ check("exits non-zero", code not in (0, None), f"exit={code}")
 check("does NOT claim all done", "=== all done ===" not in out)
 check("flags the wrapper as errored", "FINISHED WITH ERRORS" in out, out.strip()[-160:])
 failed_days = set(re.findall(r"day-\d\d-[a-z-]+", out.split("FINISHED WITH ERRORS")[-1]))
-check("names every failed day",
-      failed_days == {"day-07-salary-discussion", "day-08-negotiating-a-deadline",
-                      "day-09-small-talk-at-lunch", "day-10-technical-interview"},
-      str(sorted(failed_days)))
-check("keeps going after a failure, rather than stopping at day 7",
-      "day-10-technical-interview" in out and out.count("=== day-") == 4,
-      f"{out.count('=== day-')} day headers")
+check("names every failed day", failed_days == set(REGISTRY),
+      f"{len(failed_days)} of {len(REGISTRY)}: {sorted(failed_days)}")
+check("keeps going after a failure, rather than stopping at the first",
+      len(failed_days) == len(REGISTRY), f"only {len(failed_days)} ran")
 bad.close()
+
+print("\nthe registry drives the day list")
+shell = (REPO / "scripts" / "build_all_audio.sh").read_text(encoding="utf-8")
+check("no day is hardcoded outside the registry loop",
+      not re.search(r"^run_day day-\d\d", shell, re.M),
+      "a run_day day-NN line is back")
+check("the day list comes from days.py", "days.py" in shell)
+# Whether plan() skips days without audio/ is test_days.py's concern; here we
+# only assert the wrapper delegates its day list to the registry.
 
 print("\nthe pre-fix wrapper, for comparison")
 sh = (REPO / "scripts" / "build_all_audio.sh").read_text(encoding="utf-8")
@@ -112,10 +131,8 @@ if BASH is not None:
     check("wrapper runs from the repo without HERMES_PY set",
           subprocess.run([BASH, "-n", str(REPO / "scripts" / "build_all_audio.sh")],
                          capture_output=True).returncode == 0)
-check("every day the wrapper lists exists",
-      all((REPO / d).is_dir() for d in
-          ("day-07-salary-discussion", "day-08-negotiating-a-deadline",
-           "day-09-small-talk-at-lunch", "day-10-technical-interview")))
+# Whether every registered day exists is test_days.py's job. This suite only
+# cares that the wrapper enumerates whatever the registry holds.
 
 print(f"\n{'=' * 58}\n{passes} passed, {len(failures)} failed")
 if failures:
