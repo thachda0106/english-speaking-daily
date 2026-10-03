@@ -55,6 +55,18 @@ day-03-new-team/
     team-03-getting-up-to-speed.mp3
     team-04-asking-for-help.mp3
     team-05-small-talk-and-closing.mp3
+day-04-daily-standup/
+  conversation-01-the-stand-up-format.md
+  conversation-02-reporting-progress.md
+  conversation-03-being-blocked.md
+  conversation-04-listening-and-pairing.md
+  conversation-05-ending-the-stand-up.md
+  audio/
+    standup-01-the-format.mp3   → team lead/colleague's lines only (you answer)
+    standup-02-reporting-progress.mp3
+    standup-03-being-blocked.mp3
+    standup-04-listening-and-pairing.mp3
+    standup-05-ending-the-stand-up.mp3
 ```
 
 ## Vocabulary note
@@ -70,7 +82,7 @@ New words appear **only** in the 💡 boxes, never inside the dialogue you must 
 - [x] Day 1 — The Job Interview
 - [x] Day 2 — Phone Screen with a Recruiter
 - [x] Day 3 — Introducing Yourself to a New Team
-- [ ] Day 4 — Daily Stand-up
+- [x] Day 4 — Daily Stand-up
 - [ ] Day 5 — Code Review
 - [ ] Day 6 — Explaining a Bug to a Manager
 - [ ] Day 7 — Salary Discussion
