@@ -152,11 +152,41 @@ async def fake_synth(text, voice, rate):
 
 ma.synth_chunk = fake_synth  # keep the real ffmpeg join, drop the network call
 
+
+def lesson_day(name, lesson="conversation-01-probe.md"):
+    d = tmp / name
+    (d / "audio").mkdir(parents=True)
+    (d / lesson).write_text((tmp / lesson).read_text(encoding="utf-8"),
+                            encoding="utf-8")
+    return d
+
+
+def build_at(name, runner, lesson="conversation-01-probe.md"):
+    """Run build() on a scratch day with `runner` standing in for ffmpeg."""
+    d = lesson_day(name, lesson)
+    target = d / "audio" / ma.target_for(d / lesson, "manager")[0]
+    real, ma.run = ma.run, runner
+    try:
+        asyncio.run(ma.build(ma.target_for(d / lesson, "manager")[1], "v", "-8%", target))
+        return d, target, False
+    except RuntimeError:
+        return d, target, True
+    finally:
+        ma.run = real
+
+
+def boom(cmd):
+    raise RuntimeError("ffmpeg unavailable")
+
+
+def silent(cmd):
+    """ffmpeg exit 0 but writes nothing — the quiet failure mode."""
+    return subprocess.CompletedProcess(cmd, 0, b"", b"")
+
+
 print("\nbuilding audio")
-day = tmp / "day"
-(day / "audio").mkdir(parents=True)
-(day / "conversation-01-probe.md").write_text(CONV, encoding="utf-8")
-out = day / "audio" / "manager-01-probe.mp3"
+day = lesson_day("day")
+out = day / "audio" / ma.target_for(day / "conversation-01-probe.md", "manager")[0]
 asyncio.run(ma.build(chunks, "en-US-AriaNeural", "-8%", out))
 check("mp3 is written", out.exists() and out.stat().st_size > 0)
 check("the audio holds both the words and the answer gap", ma.duration(out) > 1.0,
@@ -173,10 +203,9 @@ check("target_for also returns the kind main() prints",
       == ["conv", "story"])
 
 day_full = tmp / "day-full"
-(day_full / "audio").mkdir(parents=True)
+lesson_day("day-full")
 for lesson in ("conversation-01-probe.md", "story-01-probe.md"):
-    (day_full / lesson).write_text((tmp / lesson).read_text(encoding="utf-8"),
-                                   encoding="utf-8")
+    shutil.copy(tmp / lesson, day_full / lesson)
 argv, main_err = sys.argv, ""
 sys.argv = ["make_audio.py", str(day_full), "--prefix", "manager"]
 try:
@@ -190,11 +219,10 @@ check("main() runs end to end over a conversation and a story", main_ok, main_er
 check("main() wrote both mp3s", len(list((day_full / "audio").glob("*.mp3"))) == 2)
 
 print("\nbuilding a story")
-day_story = tmp / "day-story"
-(day_story / "audio").mkdir(parents=True)
-(day_story / "story-01-probe.md").write_text(STORY, encoding="utf-8")
+day_story = lesson_day("day-story", "story-01-probe.md")
 story_chunks = ma.parse_story(day_story / "story-01-probe.md")
-story_out = day_story / "audio" / "story-01-probe.mp3"
+story_out = day_story / "audio" / ma.target_for(day_story / "story-01-probe.md",
+                                               "manager")[0]
 asyncio.run(ma.build(story_chunks, "en-US-AriaNeural", "-8%", story_out))
 check("a story gets audio of its own", story_out.exists())
 # Each sentence is one 0.15s tone; the rest must be air, not silence-as-sound.
@@ -206,36 +234,17 @@ check("story audio carries no speaker prefix",
       not list((day_story / "audio").glob("manager-*")))
 
 print("\nwhen a run fails part-way")
-day2 = tmp / "day-fail"
-(day2 / "audio").mkdir(parents=True)
-(day2 / "conversation-01-probe.md").write_text(CONV, encoding="utf-8")
 real_run = ma.run
-ma.run = lambda cmd: (_ for _ in ()).throw(RuntimeError("ffmpeg unavailable"))
-try:
-    asyncio.run(ma.build(chunks, "v", "-8%", day2 / "audio" / "manager-01-probe.mp3"))
-    raised = False
-except RuntimeError:
-    raised = True
-finally:
-    ma.run = real_run
+dead, target, raised = build_at("day-fail", boom)
 check("the error is reported, not swallowed", raised)
 check("a failed run still leaves no temp files",
-      not list((day2 / "audio").glob("_tts_*")))
-check("a failed run writes no half-built mp3",
-      not (day2 / "audio" / "manager-01-probe.mp3").exists())
+      not list((dead / "audio").glob("_tts_*")))
+check("a failed run writes no half-built mp3", not target.exists())
 
-day3 = tmp / "day-silent"
-(day3 / "audio").mkdir(parents=True)
-(day3 / "conversation-01-probe.md").write_text(CONV, encoding="utf-8")
-ma.run = lambda cmd: subprocess.CompletedProcess(cmd, 0, b"", b"")  # ffmpeg "succeeds" but writes nothing
-try:
-    asyncio.run(ma.build(chunks, "v", "-8%", day3 / "audio" / "manager-01-probe.mp3"))
-    silent_failed = False
-except RuntimeError:
-    silent_failed = True
-ma.run = real_run
+quiet, target, silent_failed = build_at("day-silent", silent)
 check("a build that silently writes no audio is reported", silent_failed)
-check("no empty mp3 is left behind", not list((day3 / "audio").glob("*.mp3")))
+check("no empty mp3 is left behind", not list((quiet / "audio").glob("*.mp3")))
+
 try:
     ma.run([ma.FFMPEG, "-i", str(tmp / "does-not-exist.mp3")])
     run_raises = False
@@ -253,6 +262,7 @@ for pattern in (["_tts_p000.mp3", "_tts_s000.mp3", "_tts_list_x.txt"] if in_repo
 if not in_repo:
     print("  SKIP  gitignore checks (not a git work tree)")
 check("no temp files sitting in the repo", not list(REPO.glob("day-*/audio/_tts_*")))
+
 
 def expected_mp3(day, lesson):
     speaker, renamed = SPEAKER[day.name]
