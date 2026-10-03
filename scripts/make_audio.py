@@ -118,6 +118,20 @@ def split_for_tts(text: str, limit: int = 230):
     return parts
 
 
+def target_for(md: pathlib.Path, prefix: str):
+    """(mp3 filename, chunks) for a lesson file, or None to skip it.
+
+    Conversations are named for the speaker who talks in them; a story is a
+    narration with no second speaker, so it keeps its story- name.
+    """
+    if md.name.startswith("conversation-"):
+        name = f"{prefix}-{md.stem[len('conversation-'):]}.mp3"
+        return name, parse_conversation(md)
+    if md.name.startswith("story-"):
+        return f"{md.stem}.mp3", parse_story(md)
+    return None
+
+
 async def synth_chunk(text: str, voice: str, rate: str) -> bytes:
     """Stream one chunk to mp3 bytes. save() only accepts a path, so collect the
     audio payloads from the stream directly."""
@@ -176,20 +190,33 @@ async def build(chunks, voice, rate, out_path: pathlib.Path):
         run([FFMPEG, "-y", "-f", "concat", "-safe", "0", "-i", str(listfile),
              "-c:a", "libmp3lame", "-b:a", "48k", "-ar", "24000", "-ac", "1",
              str(out_path)])
+        # A zero exit code is not proof of audio: ffmpeg can succeed and write
+        # nothing. Refuse to leave an unplayable file where a lesson expects one.
+        if not out_path.exists() or out_path.stat().st_size == 0:
+            raise RuntimeError(f"ffmpeg produced no audio for {out_path.name}")
     finally:
         for p in tmp:
             pathlib.Path(p).unlink(missing_ok=True)
 
 
 def duration(path: pathlib.Path) -> float:
-    r = subprocess.run(
-        [FFMPEG, "-i", str(path)], capture_output=True, text=True
-    )
-    m = re.search(r"Duration: (\d+):(\d+):(\d+\.\d+)", r.stderr)
-    if not m:
-        return 0.0
-    h, mnt, s = m.groups()
+    """Seconds of audio; 0.0 when ffprobe finds nothing (which is a bug)."""
+    h, mnt, s = probe(path, r"Duration: (\d+):(\d+):(\d+\.\d+)") or ("0", "0", "0.0")
     return int(h) * 3600 + int(mnt) * 60 + float(s)
+
+
+def spec_of(path: pathlib.Path):
+    """(codec, Hz, channels, kbps) — must stay identical to the day 1-4 audio."""
+    codec, hz, channels, kbps = probe(
+        path, r"Audio: (\w+).*?, (\d+) Hz, (\w+).*?, (\d+) kb/s") or (None, 0, None, 0)
+    return codec, int(hz), 1 if channels == "mono" else 2, int(kbps)
+
+
+def probe(path: pathlib.Path, pattern: str):
+    """The first capture group of `pattern` in ffprobe's stderr, or None."""
+    r = subprocess.run([FFMPEG, "-i", str(path)], capture_output=True, text=True)
+    m = re.search(pattern, r.stderr)
+    return m.groups() if m else None
 
 
 async def main():
@@ -213,17 +240,10 @@ async def main():
     audio_dir.mkdir(parents=True, exist_ok=True)
 
     for md in sorted(day_dir.glob("*.md")):
-        if md.name.startswith("conversation-"):
-            chunks = parse_conversation(md)
-            kind = "conv"
-            name = f"{args.prefix}-{md.stem[len('conversation-'):]}.mp3"
-        elif md.name.startswith("story-"):
-            chunks = parse_story(md)
-            kind = "story"
-            # Stories are narrations, not a second speaker: keep the story- prefix.
-            name = f"{md.stem}.mp3"
-        else:
+        target = target_for(md, args.prefix)
+        if target is None:
             continue
+        name, chunks = target
         if not chunks:
             print(f"  !! {md.name}: nothing to read")
             continue

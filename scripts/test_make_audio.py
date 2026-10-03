@@ -1,0 +1,248 @@
+"""Checks for the speaking-course audio pipeline.
+
+The repo has no test framework, so this is a plain script: run it and read PASS/FAIL.
+
+    python scripts/test_make_audio.py
+
+It covers the parts that are easy to break and expensive to notice late — a wrong
+audio filename, the learner's own lines read back at them, temp files left behind
+when a run fails half-way. Everything runs offline: ffmpeg builds the audio from a
+generated tone instead of calling the network, so it is fast and repeatable.
+"""
+import asyncio
+import importlib.util
+import pathlib
+import shutil
+import subprocess
+import sys
+import tempfile
+
+HERE = pathlib.Path(__file__).resolve().parent
+REPO = HERE.parent
+spec = importlib.util.spec_from_file_location("make_audio", HERE / "make_audio.py")
+ma = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(ma)
+
+# Who speaks in each day's audio. Duplicated here on purpose: the repo check below
+# is only meaningful if the expected filename comes from outside the audio folder.
+# Second item maps a lesson number to the slug its hand-made audio actually used;
+# days 1-4 predate scripts/make_audio.py and shortened a couple of slugs.
+SPEAKER = {
+    "day-01-job-interview": ("interviewer", {}),
+    "day-02-phone-screen": ("recruiter", {"04": "salary"}),
+    "day-03-new-team": ("team", {}),
+    "day-04-daily-standup": ("standup", {"01": "the-format"}),
+    "day-05-code-review": ("colleague", {}),
+    "day-06-explaining-a-bug": ("manager", {}),
+    "day-07-salary-discussion": ("recruiter", {}),
+    "day-08-negotiating-a-deadline": ("manager", {}),
+    "day-09-small-talk-at-lunch": ("colleague", {}),
+    "day-10-technical-interview": ("interviewer", {}),
+}
+
+CONV = """# Day X · Conversation 1 — Probe
+
+## 🗣️ Dialogue — read out loud
+
+> **Manager:** Hello there, this is `line` one.
+
+> **You:** And this line is the learner's, so it must be skipped.
+
+> **Manager:** Second one, with **bold** and _em_ markup.
+"""
+STORY = """# Day X · 📖 The Long Story — Probe
+
+> This intro line is a blockquote and must not be spoken.
+
+---
+
+**The first sentence is bold.** The second sentence follows it. The third one closes.
+
+---
+
+## 🧠 Story vocabulary & grammar
+- **Past-tense verbs:** `said · told`
+- This bullet must not be spoken either.
+
+## ✅ Done when…
+- [ ] I read the story out loud twice
+- [ ] I shadowed the story audio
+"""
+failures = []
+
+
+def check(name, cond, detail=""):
+    if not cond:
+        failures.append(name)
+    print(f"  {'PASS' if cond else 'FAIL'}  {name}{'' if cond else '  <- ' + detail}")
+
+
+tmp = pathlib.Path(tempfile.mkdtemp(prefix="hermes-verify-"))
+(tmp / "conversation-01-probe.md").write_text(CONV, encoding="utf-8")
+(tmp / "story-01-probe.md").write_text(STORY, encoding="utf-8")
+(tmp / "notes.md").write_text("not a lesson\n", encoding="utf-8")
+
+print("\nparsing")
+chunks = ma.parse_conversation(tmp / "conversation-01-probe.md")
+check("the learner's own lines are never read back at them",
+      [t for t, _ in chunks] == ["Hello there, this is line one.",
+                                 "Second one, with bold and em markup."],
+      str([t for t, _ in chunks]))
+check("markdown emphasis stripped",
+      all("**" not in t and "`" not in t and "_" not in t for t, _ in chunks))
+check("each line leaves room to answer", all(p == ma.PAUSE_LINE for _, p in chunks))
+
+story = " ".join(t for t, _ in ma.parse_story(tmp / "story-01-probe.md"))
+check("story prose is spoken", "The first sentence is bold." in story)
+check("story intro quote is skipped", "blockquote" not in story)
+check("story grammar notes are skipped", "Past-tense verbs" not in story)
+check("story heading is skipped", "Story vocabulary" not in story)
+check("story title is skipped", "The Long Story" not in story)
+check("the 'Done when' checklist is not read aloud",
+      "read the story out loud" not in story)
+
+(tmp / "multi.md").write_text("**One.** Two. Three.\n\nFour. Five.\n", encoding="utf-8")
+multi = ma.parse_story(tmp / "multi.md")
+check("a story is split into sentences, not read as one block",
+      [t for t, _ in multi] == ["One.", "Two.", "Three.", "Four.", "Five."],
+      str([t for t, _ in multi]))
+check("each sentence carries the story pause, so shadowing has a rhythm",
+      all(p == ma.PAUSE_SENTENCE for _, p in multi))
+
+(tmp / "rules.md").write_text("One two.\n\n---\n\nThree four.\n", encoding="utf-8")
+check("a horizontal rule is not read as prose",
+      [t for t, _ in ma.parse_story(tmp / "rules.md")] == ["One two.", "Three four."],
+      str([t for t, _ in ma.parse_story(tmp / "rules.md")]))
+
+(tmp / "messy.md").write_text("**A**   `b`\nsecond   line. Done.\n", encoding="utf-8")
+check("stray whitespace is collapsed so the tts call stays clean",
+      [t for t, _ in ma.parse_story(tmp / "messy.md")] == ["A b second line.", "Done."],
+      str([t for t, _ in ma.parse_story(tmp / "messy.md")]))
+
+long = ", ".join(["word" * 20] * 12)
+check("long lines split under the tts limit",
+      all(len(p) <= 230 for p in ma.split_for_tts(long)))
+check("splitting loses no words", " ".join(ma.split_for_tts(long)) == long)
+check("short line is left alone", ma.split_for_tts("hi there") == ["hi there"])
+check("a line just under the limit is not split at all",
+      ma.split_for_tts("word " * 45 + "end") == ["word " * 45 + "end"])
+check("a long line with no clause breaks stays whole (nowhere to split)",
+      ma.split_for_tts("word " * 60) == [("word " * 60).rstrip()])
+
+print("\nfilenames")
+check("a conversation is named for the speaker who talks in it",
+      ma.target_for(tmp / "conversation-01-probe.md", "manager")[0]
+      == "manager-01-probe.mp3")
+check("a story keeps its story- name, since nobody else speaks it",
+      ma.target_for(tmp / "story-01-probe.md", "manager")[0]
+      == "story-01-probe.mp3")
+check("files that are not lessons are skipped",
+      ma.target_for(tmp / "notes.md", "manager") is None)
+
+seed = tmp / "seed.mp3"
+subprocess.run([ma.FFMPEG, "-y", "-f", "lavfi", "-i", "sine=frequency=440:duration=0.15",
+                "-c:a", "libmp3lame", "-b:a", "48k", "-ar", "24000", "-ac", "1",
+                str(seed)], capture_output=True)
+TONE = seed.read_bytes()
+
+
+async def fake_synth(text, voice, rate):
+    return TONE
+
+
+ma.synth_chunk = fake_synth  # keep the real ffmpeg join, drop the network call
+
+print("\nbuilding audio")
+day = tmp / "day"
+(day / "audio").mkdir(parents=True)
+(day / "conversation-01-probe.md").write_text(CONV, encoding="utf-8")
+out = day / "audio" / "manager-01-probe.mp3"
+asyncio.run(ma.build(chunks, "en-US-AriaNeural", "-8%", out))
+check("mp3 is written", out.exists() and out.stat().st_size > 0)
+check("the audio holds both the words and the answer gap", ma.duration(out) > 1.0,
+      f"{ma.duration(out):.2f}s")
+check("no temp files left behind", not list((day / "audio").glob("_tts_*")))
+check("output matches the format of the hand-made day 1-4 mp3s",
+      ma.spec_of(out) == ("mp3", 24000, 1, 48), str(ma.spec_of(out)))
+
+print("\nbuilding a story")
+day_story = tmp / "day-story"
+(day_story / "audio").mkdir(parents=True)
+(day_story / "story-01-probe.md").write_text(STORY, encoding="utf-8")
+story_chunks = ma.parse_story(day_story / "story-01-probe.md")
+story_out = day_story / "audio" / "story-01-probe.mp3"
+asyncio.run(ma.build(story_chunks, "en-US-AriaNeural", "-8%", story_out))
+check("a story gets audio of its own", story_out.exists())
+# Each sentence is one 0.15s tone; the rest must be air, not silence-as-sound.
+spoken = len(story_chunks) * 0.15
+check("a story breathes between sentences instead of running on",
+      ma.duration(story_out) > spoken * 1.5,
+      f"{ma.duration(story_out):.2f}s vs {spoken:.2f}s of tone")
+check("story audio carries no speaker prefix",
+      not list((day_story / "audio").glob("manager-*")))
+
+print("\nwhen a run fails part-way")
+day2 = tmp / "day-fail"
+(day2 / "audio").mkdir(parents=True)
+(day2 / "conversation-01-probe.md").write_text(CONV, encoding="utf-8")
+real_run = ma.run
+ma.run = lambda cmd: (_ for _ in ()).throw(RuntimeError("ffmpeg unavailable"))
+try:
+    asyncio.run(ma.build(chunks, "v", "-8%", day2 / "audio" / "manager-01-probe.mp3"))
+    raised = False
+except RuntimeError:
+    raised = True
+finally:
+    ma.run = real_run
+check("the error is reported, not swallowed", raised)
+check("a failed run still leaves no temp files",
+      not list((day2 / "audio").glob("_tts_*")))
+check("a failed run writes no half-built mp3",
+      not (day2 / "audio" / "manager-01-probe.mp3").exists())
+
+day3 = tmp / "day-silent"
+(day3 / "audio").mkdir(parents=True)
+(day3 / "conversation-01-probe.md").write_text(CONV, encoding="utf-8")
+ma.run = lambda cmd: subprocess.CompletedProcess(cmd, 0, b"", b"")  # ffmpeg "succeeds" but writes nothing
+try:
+    asyncio.run(ma.build(chunks, "v", "-8%", day3 / "audio" / "manager-01-probe.mp3"))
+    silent_failed = False
+except RuntimeError:
+    silent_failed = True
+ma.run = real_run
+check("a build that silently writes no audio is reported", silent_failed)
+check("no empty mp3 is left behind", not list((day3 / "audio").glob("*.mp3")))
+try:
+    ma.run([ma.FFMPEG, "-i", str(tmp / "does-not-exist.mp3")])
+    run_raises = False
+except RuntimeError as e:
+    run_raises = "failed" in str(e)
+check("run() reports an ffmpeg failure, with the reason", run_raises)
+
+print("\nrepo state")
+in_repo = subprocess.run(["git", "-C", str(REPO), "rev-parse", "--is-inside-work-tree"],
+                         capture_output=True, text=True).stdout.strip() == "true"
+for pattern in (["_tts_p000.mp3", "_tts_s000.mp3", "_tts_list_x.txt"] if in_repo else []):
+    ignored = subprocess.run(["git", "-C", str(REPO), "check-ignore", "-q",
+                              f"day-01/audio/{pattern}"], capture_output=True)
+    check(f"gitignored: {pattern}", ignored.returncode == 0)
+if not in_repo:
+    print("  SKIP  gitignore checks (not a git work tree)")
+check("no temp files sitting in the repo", not list(REPO.glob("day-*/audio/_tts_*")))
+
+def expected_mp3(day, lesson):
+    speaker, renamed = SPEAKER[day.name]
+    num, slug = lesson.stem[len("conversation-"):].split("-", 1)
+    return (f"{lesson.stem}.mp3" if lesson.name.startswith("story-")
+            else f"{speaker}-{num}-{renamed.get(num, slug)}.mp3")
+
+
+lessons = [(d, p) for d in sorted(REPO.glob("day-*")) if d.name in SPEAKER
+           for p in sorted(d.glob("*.md")) if ma.target_for(p, SPEAKER[d.name][0])]
+orphan = [f"{d.name}/{p.name}" for d, p in lessons
+          if not (d / "audio" / expected_mp3(d, p)).exists()]
+check(f"every lesson has its mp3 ({len(lessons)} lessons)", not orphan, str(orphan[:5]))
+
+shutil.rmtree(tmp, ignore_errors=True)
+print(f"\n{'=' * 58}\n{len(failures)} failed")
+sys.exit(1 if failures else 0)
