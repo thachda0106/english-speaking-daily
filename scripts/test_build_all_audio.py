@@ -113,23 +113,22 @@ check("no day is hardcoded outside the registry loop",
       not re.search(r"^run_day day-\d\d", shell, re.M),
       "a run_day day-NN line is back")
 check("the day list comes from days.py", "days.py" in shell)
-# Whether plan() skips days without audio/ is test_days.py's concern; here we
-# only assert the wrapper delegates its day list to the registry.
 
 print("\nthe day-number filter passes whole folder names")
 # The stub echoes its argv, so this asserts what the wrapper *hands over* --
 # which is the part the wrapper controls. Banners come from the real script, so
 # asserting on them here would pass regardless of the wrapper's behaviour.
+PICK = REGISTRY[1]  # a mid-list day, so an off-by-one in the filter would show
 named = Sandbox().stub(0, "ok")
 (named.dir / "scripts" / "make_audio.py").write_text(
     "import sys\nprint('ARGV=' + '|'.join(sys.argv[1:]))\n", encoding="utf-8")
-code, out = named.run_with_args(["28"])
+code, out = named.run_with_args([PICK[4:6]])
 passed = [l for l in out.splitlines() if "ARGV=" in l]
 check("one day ran for the requested number", len(passed) == 1, out.strip()[-120:])
 check("it received the full folder name, not a stripped one",
-      passed and passed[0].startswith("ARGV=day-28-hobbies-and-interests|"),
-      str(passed[:1]))
-check("no other day ran", "day-27" not in out and "day-29" not in out)
+      passed and passed[0].startswith(f"ARGV={PICK}|"), str(passed[:1]))
+check("no other day ran",
+      all(l.startswith(f"ARGV={PICK}|") for l in passed))
 check("exit 0 when the selected day succeeds", code == 0, f"exit={code}")
 named.close()
 
@@ -163,8 +162,6 @@ if BASH is not None:
     check("wrapper runs from the repo without HERMES_PY set",
           subprocess.run([BASH, "-n", str(REPO / "scripts" / "build_all_audio.sh")],
                          capture_output=True).returncode == 0)
-# Whether every registered day exists is test_days.py's job. This suite only
-# cares that the wrapper enumerates whatever the registry holds.
 
 print(f"\n{'=' * 58}\n{passes} passed, {len(failures)} failed")
 if failures:

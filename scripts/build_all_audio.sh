@@ -15,20 +15,17 @@ planned=0
 
 # Emit "<day-folder> <speaker>" per line, from the single source of truth.
 # A day qualifies when its lessons exist -- not when an audio/ folder already
-# does. Gating on audio/ meant a day's very first build was silently skipped,
-# and 'bash build_all_audio.sh 27' printed 'all done' having done nothing.
+# does: gating on audio/ skipped a day's first build entirely, so
+# 'build_all_audio.sh 27' printed 'all done' having synthesised nothing.
 plan () {
   "$PY" - <<'EOF'
-import pathlib, re, sys
-sys.path.insert(0, str(pathlib.Path("scripts").resolve()))
-import importlib.util
+import importlib.util, pathlib
 spec = importlib.util.spec_from_file_location("days", "scripts/days.py")
 mod = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(mod)
 for day, speaker in sorted(mod.DAYS.items()):
-    if not any(pathlib.Path(day).glob("*.md")):
-        continue
-    print(day, speaker)
+    if any(pathlib.Path(day).glob("*.md")):
+        print(day, speaker)
 EOF
 }
 
