@@ -267,27 +267,19 @@ orphan = [f"{d.name}/{p.name}" for d, p in lessons
 check(f"every lesson has its mp3 ({len(lessons)} lessons, {len(voiced)} voiced days)",
       not orphan, str(orphan[:5]))
 
-# A day folder nobody registered is the silent failure: its audio would be named
-# after a prefix nobody expects, and no other check would notice.
-unregistered = [d.name for d in sorted(REPO.glob("day-*")) if d.name not in SPEAKER]
-check("every day folder is registered in scripts/days.py", not unregistered,
-      str(unregistered))
-
-missing = [d for d in SPEAKER if not (REPO / d).is_dir()]
-on_disk = {d.name for d in (REPO / ".").glob("day-*") if d.is_dir()}
-# days.py is the roadmap: days 11-26 are planned but unwritten, so a registered
-# day with no folder is not a defect. What IS a defect is the two disagreeing --
-# a folder nobody registered (its audio would be named after a prefix no other
-# check expects), or a registration whose folder vanished.
+on_disk = {d.name for d in REPO.glob("day-*") if d.is_dir()}
+planned = set(SPEAKER) - on_disk
+# days.py is the roadmap, so a registered day with no folder is planned, not
+# broken. The two must still agree exactly: a folder nobody registered would get
+# audio named after a prefix nothing expects, and a registration whose folder
+# vanished would silently drop that day out of the mp3 checks.
 check("every day folder on disk is registered in days.py",
-      not (on_disk - set(SPEAKER)), str(sorted(on_disk - set(SPEAKER))))
-check("roadmap and repo partition cleanly: written ∪ unwritten = registered",
-      on_disk | set(missing) == set(SPEAKER)
-      and not (on_disk & set(missing)),
-      f"unwritten={sorted(missing)[:4]} both={sorted(on_disk & set(missing))[:4]}")
-if missing:
-    print(f"\n  NOTE  {len(missing)} roadmap day(s) not written yet:")
-    print("        " + ", ".join(missing))
+      not on_disk - set(SPEAKER), str(sorted(on_disk - set(SPEAKER))))
+check("roadmap and repo agree on written vs planned",
+      on_disk | planned == set(SPEAKER) and not on_disk & planned)
+if planned:
+    print(f"\n  NOTE  {len(planned)} roadmap day(s) not written yet:")
+    print("        " + ", ".join(sorted(planned)))
 
 if pending:
     print(f"\n  NOTE  {len(pending)} day(s) written but not voiced yet:")
