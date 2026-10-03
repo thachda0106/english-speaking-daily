@@ -39,11 +39,10 @@ class Sandbox:
     replaces the real generator and no day folder or mp3 is needed.
     """
 
-    def __init__(self, script: str):
+    def __init__(self):
         self.dir = pathlib.Path(tempfile.mkdtemp(prefix="hermes-verify-"))
         (self.dir / "scripts").mkdir()
         shutil.copy(REPO / "scripts" / "build_all_audio.sh", self.dir / "scripts")
-        self.script = script
 
     def stub(self, exit_code: int, echo: str = ""):
         (self.dir / "scripts" / "make_audio.py").write_text(
@@ -70,7 +69,7 @@ else:
     check("build_all_audio.sh parses", r.returncode == 0, r.stderr.strip()[:120])
 
 print("\nwhen every day succeeds")
-ok = Sandbox("").stub(0, "ok")
+ok = Sandbox().stub(0, "ok")
 code, out = ok.run()
 check("exits 0", code == 0, f"exit={code}")
 check("reports all done", "=== all done ===" in out)
@@ -78,7 +77,7 @@ check("names no failures", "FAILED" not in out)
 ok.close()
 
 print("\nwhen a day fails (exit 1 from the generator)")
-bad = Sandbox("").stub(1, "simulated network failure")
+bad = Sandbox().stub(1, "simulated network failure")
 code, out = bad.run()
 check("exits non-zero", code not in (0, None), f"exit={code}")
 check("does NOT claim all done", "=== all done ===" not in out)
@@ -95,13 +94,14 @@ bad.close()
 
 print("\nthe pre-fix wrapper, for comparison")
 sh = (REPO / "scripts" / "build_all_audio.sh").read_text(encoding="utf-8")
-unfixed = re.sub(r"if \[ \$\{#failed\[@\]\} -gt 0 \]; then.*?^fi\n", "",
+# \r?\n, not \n: this repo checks the script in with CRLF endings, and a bare $
+# anchor silently fails to match them, which would make this replay vacuous.
+unfixed = re.sub(r"if \[ \$\{#failed\[@\]\} -gt 0 \]; then.*?^fi\r?\n", "",
                  sh, flags=re.M | re.S)
 check("the guard under test is actually present in the repo",
       unfixed != sh and "FINISHED WITH ERRORS" in sh)
-old = Sandbox("").stub(1, "simulated network failure")
-pathlib_text = (old.dir / "scripts" / "build_all_audio.sh")
-pathlib_text.write_text(unfixed, encoding="utf-8")
+old = Sandbox().stub(1, "simulated network failure")
+(old.dir / "scripts" / "build_all_audio.sh").write_text(unfixed, encoding="utf-8")
 code, out = old.run()
 check("without the guard it lies: exit 0 and 'all done'",
       code == 0 and "=== all done ===" in out, f"exit={code}")
