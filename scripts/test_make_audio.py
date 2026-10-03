@@ -273,8 +273,21 @@ unregistered = [d.name for d in sorted(REPO.glob("day-*")) if d.name not in SPEA
 check("every day folder is registered in scripts/days.py", not unregistered,
       str(unregistered))
 
-missing = [d for d in SPEAKER if not pathlib.Path(d).is_dir()]
-check("no registered day is missing its folder", not missing, str(missing))
+missing = [d for d in SPEAKER if not (REPO / d).is_dir()]
+on_disk = {d.name for d in (REPO / ".").glob("day-*") if d.is_dir()}
+# days.py is the roadmap: days 11-26 are planned but unwritten, so a registered
+# day with no folder is not a defect. What IS a defect is the two disagreeing --
+# a folder nobody registered (its audio would be named after a prefix no other
+# check expects), or a registration whose folder vanished.
+check("every day folder on disk is registered in days.py",
+      not (on_disk - set(SPEAKER)), str(sorted(on_disk - set(SPEAKER))))
+check("roadmap and repo partition cleanly: written ∪ unwritten = registered",
+      on_disk | set(missing) == set(SPEAKER)
+      and not (on_disk & set(missing)),
+      f"unwritten={sorted(missing)[:4]} both={sorted(on_disk & set(missing))[:4]}")
+if missing:
+    print(f"\n  NOTE  {len(missing)} roadmap day(s) not written yet:")
+    print("        " + ", ".join(missing))
 
 if pending:
     print(f"\n  NOTE  {len(pending)} day(s) written but not voiced yet:")
