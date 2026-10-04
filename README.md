@@ -176,14 +176,19 @@ already in you, out loud, until it stops feeling like English.
 | 29 | Storytelling | "One time..." — telling about your life |
 | 30 | Sounding natural | Fillers, rhythm, the final exam |
 
-**Days 11-13 are written and voiced.** Days 14-26 are on the roadmap but not yet
-built — they are written one day at a time rather than in parallel batches, and
-each day's audio takes about five minutes to generate. Check status with:
+**All 30 days are written.** Days 1-10 are workplace English, 11-26 everyday
+conversation, and 27-30 fluency and storytelling. Days 11-26 were written one day
+at a time after twelve parallel subagents produced nothing; each day's audio then
+takes about two minutes to generate:
 
 ```bash
 python scripts/audit_lessons.py          # what's written, and its shape
 bash scripts/build_all_audio.sh 14       # generate one day's audio
 ```
+
+Every day is 5 conversations and 1 long story, each with a matching MP3 — an
+interviewer-only recording of the partner's lines, with a pause for you to answer
+out loud.
 
 **Day 30 is the one that changes everything.** By then you have 30 days of material
 behind you, and the lesson is what native speakers actually do: pause, re-start,
