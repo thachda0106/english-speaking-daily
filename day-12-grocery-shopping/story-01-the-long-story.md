@@ -44,7 +44,7 @@ Past perfect and past simple next to each other: *"I used to think… Then one e
 
 ## 🧠 Your active vocabulary
 
-- **Depends what it is** · **which is silly** · **it's a real problem** · **do you take card?** · **can I pay separately?** · **the most dangerous place in any supermarket**
+- **Depends what it is** · **which is silly** · **it's a real problem** · **do you take card?** · **can I pay separately?** · **the most dangerous place in any supermarket** · **they were by the till**
 
 ## ✏️ Speak for 60 seconds
 

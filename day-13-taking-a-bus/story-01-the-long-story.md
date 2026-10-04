@@ -50,7 +50,7 @@ Present perfect for a life fact — *"I have never been good at buses"* — then
 
 ## 🧠 Your active vocabulary
 
-- **has the ___ just gone?** · **then I'm there?** · **is this stop no good?** · **of course** · **I'll just walk, then** · **no worries** · **mind if I sit here?** · **it can't miss it** → *"you can't miss it"*
+- **has the ___ just gone?** · **then I'm there?** · **is this stop no good?** · **of course** · **I'll just walk, then** · **no worries** · **mind if I sit here?** · **you can't miss it** · **I thought…**
 
 ## ✏️ Speak for 60 seconds
 

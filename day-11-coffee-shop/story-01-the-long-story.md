@@ -47,7 +47,7 @@ But I order by myself now, and nobody minds, and the coffee is usually fine.
 
 ## 🧠 Your active vocabulary
 
-- **go-to** · **I'd like to, but I can't** · **to take away** · **is it possible to…?** · **that came out higher than I wanted** · **the hard part was never X, it was Y**
+- **go-to** · **I'd like to, but I can't** · **to take away** · **is it possible to…?** · **I don't know the options** · **less sweet** · **the hard part was never X, it was Y**
 
 ## ✏️ Speak for 60 seconds
 

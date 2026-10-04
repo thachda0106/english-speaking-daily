@@ -21,6 +21,10 @@ The coffee has arrived and there is a pause. This is the moment where you find o
 
 > **Friend:** That's rude, but probably true.
 
+> **You:** The hard part was never finding coffee. It was deciding.
+
+> **Friend:** Yeah, I'd say that's true.
+
 > **You:** What about you? Same thing every morning?
 
 > **Friend:** Yeah. Black, no sugar. Since I was about twelve.
@@ -31,6 +35,8 @@ The coffee has arrived and there is a pause. This is the moment where you find o
 - **black coffee** — with no milk and no sugar. Not the same as *bittersweet*
 - **I'd like to, but I can't** — the polite way to say something is impossible for you
 - **Since I was about twelve** — starting a story without saying *"when I was young"*
+- **the hard part was never X, it was Y** — the shape of a small realisation
+- **What about you?** — the most useful question in this entire course. Short, natural, and it hands the conversation straight back
 
 ## ✅ After you speak
 

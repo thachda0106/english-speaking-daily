@@ -11,7 +11,7 @@ You didn't plan to buy any of this. It happens in every shop, to everyone. Being
 
 > **Friend:** What happened?
 
-> **You:** They had the biscuits by the till. Those are my weakness.
+> **You:** The biscuits did it. They were by the till, which is the most dangerous place in any supermarket, and they were the ones I'd seen in an advert that week.
 
 > **Friend:** I know that about you.
 
@@ -19,7 +19,7 @@ You didn't plan to buy any of this. It happens in every shop, to everyone. Being
 
 > **Friend:** And you walked straight past it.
 
-> **You:** I did not walk past it. I stopped. I made a decision. I chose biscuits.
+> **You:** I did not walk past it. They were by the till. I stopped. I made a decision. I chose biscuits.
 
 > **Friend:** Are you having a bad day?
 
@@ -30,6 +30,8 @@ You didn't plan to buy any of this. It happens in every shop, to everyone. Being
 - **which is silly** — a mild self-judgement. *"Silly"* is softer than *"stupid"* and sounds honest rather than dramatic
 - **that about you** — knowing someone well enough to predict them. Very common between friends
 - **it's a real problem** — half joke, half true, and a useful phrase for anything you genuinely can't stop doing
+- **by the till** — where the most tempting things always are
+- **the most dangerous place in any supermarket** — a joke, and genuinely true
 - **I made a decision. I chose biscuits.** — absurd understatement, which is a form of humour that works in English
 
 ## ✅ After you speak

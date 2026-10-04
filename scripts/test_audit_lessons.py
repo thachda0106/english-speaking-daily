@@ -116,6 +116,22 @@ check("'root cause' is caught, not 'cause'",
 check("banned words in a vocabulary box are fine",
       al.problems_for(conv(vocab="- **rollback** — the postmortem you skip"), False) == [])
 
+print("\nunit: stray vocab")
+CONVS = ["a day where you say: there are loads, and he said no worries\n"
+         "> **Friend:** That was the hard part, wasn't it?\n"]
+check("a phrase taught in a conversation passes",
+      al.stray_vocab(CONVS, "## 🧠 Your active vocabulary\n- **no worries** · **there are loads**\n") == [])
+check("a phrase taught nowhere is reported",
+      al.stray_vocab(CONVS, "## 🧠 Your active vocabulary\n- **can you take the lid off**\n")
+      == ["can you take the lid off"])
+check("a template with ___ is skipped",
+      al.stray_vocab(CONVS, "## 🧠 Your active vocabulary\n- **a bit X, but the Y is good**\n") == [])
+check("the story's bolded opening is not treated as vocab",
+      al.stray_vocab(CONVS, "**I can cook exactly one thing.**\n\n"
+                            "## 🧠 Your active vocabulary\n- **no worries**\n") == [])
+check("a one-word item is not checked",
+      al.stray_vocab(CONVS, "## 🧠 Your active vocabulary\n- **no** · **hmm** · **thanks**\n") == [])
+
 print("\nunit: counting")
 # 8 dialogue lines and no "extra", so exactly 8 -- headings are not turns.
 check("dialogue turns are counted, headings are not",
