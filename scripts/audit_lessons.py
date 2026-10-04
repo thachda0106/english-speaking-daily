@@ -72,12 +72,11 @@ def stray_vocab(day_texts, story_text):
 
     Only the "Your active vocabulary" section is read, not the whole story: the
     opening sentence is bold too, and it is prose, not a phrase the day promised
-    to teach. The first bolded item in the story is also skipped, since that is
-    the opening line.
+    to teach.
 
-    A phrase passes if any conversation contains it, or contains all but its last
-    word -- "that's not a X, that's a Y" is taught as "that's not a contradiction,
-    that's a routine", and demanding an exact match would flag it forever.
+    A phrase passes if a conversation contains it, or contains all but its last
+    word -- "that's not a X, that's a Y" is taught as "that's not a
+    contradiction, that's a routine", and an exact match would flag it forever.
     """
     taught = " ".join(day_texts).lower()
     taught = re.sub(r"\s+", " ", taught)
@@ -92,7 +91,8 @@ def stray_vocab(day_texts, story_text):
         # "a bit ___, but the Y is good" and "a bit X, but the Y is good".
         if "___" in phrase or re.search(r"\b[XY]\b", phrase):
             continue
-        head = re.sub(r"\s+", " ", phrase.split(",")[0].split("—")[0].strip().lower())
+        head = re.sub(r"\s+", " ",
+                      phrase.split(",")[0].split("—")[0].strip().lower())
         if len(head.split()) < 2 or head in taught:
             continue
         # tolerate one substituted word: "not a X, not a Y" vs "not a bad thing"
@@ -122,15 +122,14 @@ def problems_for(text, story):
 
 def audit(day):
     """(filename, is_story, prose_words, turns, problems) per lesson file."""
+    lessons = [(f, f.read_text(encoding="utf-8")) for f in sorted((REPO / day).glob("*.md"))]
+    convs = " ".join(t for f, t in lessons if not f.name.startswith("story-"))
     rows = []
-    for f in sorted((REPO / day).glob("*.md")):
-        text = f.read_text(encoding="utf-8")
+    for f, text in lessons:
         story = f.name.startswith("story-")
         problems = problems_for(text, story)
         if story:
-            convs = [g.read_text(encoding="utf-8")
-                     for g in sorted((REPO / day).glob("conversation-*.md"))]
-            if stray := stray_vocab(convs, text):
+            if stray := stray_vocab([convs], text):
                 problems.append(f"vocab not taught in any conversation {stray}")
         rows.append((f.name, story, prose_words(text), turns(text), problems))
     return rows
